@@ -1,78 +1,122 @@
-async function fetchJSON(url, options) {
+const { HashRouter, Switch, Route, Link, useParams } = ReactRouterDOM;
+
+async function api(url, options) {
   const res = await fetch(url, options);
+  if (!res.ok) throw new Error('API error');
   return res.json();
 }
 
-async function updateHouse(id, data) {
-  return fetchJSON(`/api/houses/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-}
+function HousesPage() {
+  const [houses, setHouses] = React.useState([]);
+  React.useEffect(() => {
+    api('/api/houses').then(setHouses);
+  }, []);
 
-async function deleteHouse(id) {
-  await fetch(`/api/houses/${id}`, { method: 'DELETE' });
-}
-
-async function loadHouses() {
-  const houses = await fetchJSON('/api/houses');
-  const container = document.getElementById('app');
-  container.innerHTML = `<h1>Дома</h1>`;
-  const list = document.createElement('ul');
-  houses.forEach(h => {
-    const li = document.createElement('li');
-    const span = document.createElement('span');
-    span.textContent = h.name;
-    li.appendChild(span);
-
-    const viewBtn = document.createElement('button');
-    viewBtn.textContent = 'Детали';
-    const details = document.createElement('div');
-    details.className = 'details';
-    details.style.display = 'none';
-    details.innerHTML = `\n      <div>Адрес: ${h.address || '—'}</div>\n      <div>Этажей: ${h.floors}</div>\n      <div>Координаты: ${h.coordinates.lat}, ${h.coordinates.lon}</div>\n      <div>Комнат: ${h.rooms.length}</div>`;
-    viewBtn.onclick = () => {
-      details.style.display = details.style.display === 'none' ? 'block' : 'none';
-    };
-    li.appendChild(viewBtn);
-    li.appendChild(details);
-
-    const editBtn = document.createElement('button');
-    editBtn.textContent = 'Редактировать';
-    editBtn.onclick = async () => {
-      const name = prompt('Новое название', h.name);
-      if (!name) return;
-      await updateHouse(h.id, { name });
-      loadHouses();
-    };
-    li.appendChild(editBtn);
-
-    const delBtn = document.createElement('button');
-    delBtn.textContent = 'Удалить';
-    delBtn.onclick = async () => {
-      if (!confirm('Удалить дом?')) return;
-      await deleteHouse(h.id);
-      loadHouses();
-    };
-    li.appendChild(delBtn);
-
-    list.appendChild(li);
-  });
-  container.appendChild(list);
-  const btn = document.createElement('button');
-  btn.textContent = 'Добавить дом';
-  btn.onclick = async () => {
+  const addHouse = async () => {
     const name = prompt('Название дома');
     if (!name) return;
-    await fetchJSON('/api/houses', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
-    loadHouses();
+    const house = await api('/api/houses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    setHouses(houses.concat(house));
   };
-  container.appendChild(btn);
+
+  return React.createElement('div', null,
+    React.createElement('h1', null, 'Дома'),
+    React.createElement('ul', null,
+      houses.map(h => React.createElement('li', { key: h.id },
+        React.createElement(Link, { to: `/house/${h.id}` }, h.name)
+      ))
+    ),
+    React.createElement('button', { onClick: addHouse }, 'Добавить дом')
+  );
+}
+
+function HousePage() {
+  const { id } = useParams();
+  const [house, setHouse] = React.useState(null);
+  const [rooms, setRooms] = React.useState([]);
+
+  React.useEffect(() => {
+    api(`/api/houses/${id}`).then(setHouse);
+    api(`/api/houses/${id}/rooms`).then(setRooms);
+  }, [id]);
+
+  const addRoom = async () => {
+    const name = prompt('Название комнаты');
+    if (!name) return;
+    const room = await api(`/api/houses/${id}/rooms`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    setRooms(rooms.concat(room));
+  };
+
+  if (!house) return React.createElement('div', null, 'Загрузка...');
+
+  return React.createElement('div', null,
+    React.createElement(Link, { to: '/' }, 'Назад'),
+    React.createElement('h2', null, house.name),
+    React.createElement('ul', null,
+      rooms.map(r => React.createElement('li', { key: r.id },
+        React.createElement(Link, { to: `/house/${id}/room/${r.id}` }, r.name)
+      ))
+    ),
+    React.createElement('button', { onClick: addRoom }, 'Добавить комнату')
+  );
+}
+
+function RoomPage() {
+  const { houseId, roomId } = useParams();
+  const [room, setRoom] = React.useState(null);
+  const [items, setItems] = React.useState([]);
+
+  React.useEffect(() => {
+    api(`/api/houses/${houseId}/rooms`).then(rooms => {
+      const r = rooms.find(r => r.id === roomId);
+      setRoom(r);
+    });
+    api(`/api/houses/${houseId}/rooms/${roomId}/items`).then(setItems);
+  }, [houseId, roomId]);
+
+  const addItem = async () => {
+    const name = prompt('Название элемента');
+    if (!name) return;
+    const item = await api(`/api/houses/${houseId}/rooms/${roomId}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+    setItems(items.concat(item));
+  };
+
+  if (!room) return React.createElement('div', null, 'Загрузка...');
+
+  return React.createElement('div', null,
+    React.createElement(Link, { to: `/house/${houseId}` }, 'Назад'),
+    React.createElement('h3', null, room.name),
+    React.createElement('ul', null,
+      items.map(it => React.createElement('li', { key: it.id }, it.name))
+    ),
+    React.createElement('button', { onClick: addItem }, 'Добавить элемент')
+  );
+}
+
+function App() {
+  return React.createElement(HashRouter, null,
+    React.createElement(Switch, null,
+      React.createElement(Route, { path: '/', exact: true, component: HousesPage }),
+      React.createElement(Route, { path: '/house/:id', exact: true, component: HousePage }),
+      React.createElement(Route, { path: '/house/:houseId/room/:roomId', component: RoomPage })
+    )
+  );
 }
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/service-worker.js');
 }
 
-loadHouses();
+ReactDOM.render(React.createElement(App), document.getElementById('app'));

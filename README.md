@@ -1,24 +1,26 @@
 # Быт (Byt)
 
 Простое офлайн-веб‑приложение для учёта домашних дел.
+Интерфейс построен на React и работает как PWA.
 
 ## Архитектура
 
 - **Backend**: Node.js без внешних зависимостей. Данные хранятся в файле `data/db.json`.
-- **Frontend**: простая страница на JavaScript с поддержкой PWA (service worker и manifest).
+- **Frontend**: React (через CDN) и небольшое SPA с React Router.
 
 ## Запуск
 
 ```sh
-node index.js
+npm install
+npm start
 ```
 
-Приложение откроется на `http://localhost:3000`.
+Сервер стартует на `http://localhost:3000`.
 
 ## Компоненты
 
-- `index.js` – минимальный HTTP‑сервер и API `/api/houses`.
-- `public/` – статические файлы интерфейса.
+- `index.js` – минимальный HTTP‑сервер и API `/api/houses` и связанные маршруты.
+  - `public/` – статические файлы интерфейса.
   - `index.html` – основная страница.
   - `app.js` – логика UI.
   - `style.css` – стили (тёмная тема).

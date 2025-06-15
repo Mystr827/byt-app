@@ -32,7 +32,7 @@ function serveFile(filePath, contentType, res) {
 
 function handleApi(req, res) {
   const data = readDB();
-  const parts = req.url.split('/');
+  const parts = req.url.split('/').filter(Boolean);
   if (req.method === 'GET' && req.url === '/api/houses') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data.houses));
@@ -59,8 +59,19 @@ function handleApi(req, res) {
     });
     return;
   }
-  if (parts.length === 4 && parts[1] === 'api' && parts[2] === 'houses') {
-    const id = parts[3];
+  if (parts.length === 4 && parts[0] === 'api' && parts[1] === 'houses') {
+    const id = parts[2];
+    if (req.method === 'GET') {
+      const house = data.houses.find(h => h.id === id);
+      if (!house) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(house));
+      return;
+    }
     if (req.method === 'PUT') {
       let body = '';
       req.on('data', chunk => (body += chunk));
@@ -91,6 +102,72 @@ function handleApi(req, res) {
       res.writeHead(204);
       res.end();
       return;
+    }
+  }
+
+  if (parts.length >= 5 && parts[0] === 'api' && parts[1] === 'houses' && parts[3] === 'rooms') {
+    const houseId = parts[2];
+    const house = data.houses.find(h => h.id === houseId);
+    if (!house) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    if (req.method === 'GET' && parts.length === 4 + 1) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(house.rooms));
+      return;
+    }
+    if (req.method === 'POST' && parts.length === 4 + 1) {
+      let body = '';
+      req.on('data', chunk => (body += chunk));
+      req.on('end', () => {
+        const payload = body ? JSON.parse(body) : {};
+        const room = { id: randomUUID(), name: payload.name || 'Комната', items: [] };
+        house.rooms.push(room);
+        writeDB(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(room));
+      });
+      return;
+    }
+
+    if (parts.length >= 6) {
+      const roomId = parts[4];
+      const room = house.rooms.find(r => r.id === roomId);
+      if (!room) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+      if (parts.length === 6 && req.method === 'DELETE') {
+        const idx = house.rooms.findIndex(r => r.id === roomId);
+        house.rooms.splice(idx, 1);
+        writeDB(data);
+        res.writeHead(204);
+        res.end();
+        return;
+      }
+      if (parts.length === 7 && parts[5] === 'items') {
+        if (req.method === 'GET') {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(room.items));
+          return;
+        }
+        if (req.method === 'POST') {
+          let body = '';
+          req.on('data', chunk => (body += chunk));
+          req.on('end', () => {
+            const payload = body ? JSON.parse(body) : {};
+            const item = { id: randomUUID(), name: payload.name || 'Элемент' };
+            room.items.push(item);
+            writeDB(data);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(item));
+          });
+          return;
+        }
+      }
     }
   }
   res.writeHead(404);
