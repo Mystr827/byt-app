@@ -32,6 +32,7 @@ function serveFile(filePath, contentType, res) {
 
 function handleApi(req, res) {
   const data = readDB();
+  const parts = req.url.split('/');
   if (req.method === 'GET' && req.url === '/api/houses') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(data.houses));
@@ -57,6 +58,40 @@ function handleApi(req, res) {
       res.end(JSON.stringify(house));
     });
     return;
+  }
+  if (parts.length === 4 && parts[1] === 'api' && parts[2] === 'houses') {
+    const id = parts[3];
+    if (req.method === 'PUT') {
+      let body = '';
+      req.on('data', chunk => (body += chunk));
+      req.on('end', () => {
+        const payload = body ? JSON.parse(body) : {};
+        const house = data.houses.find(h => h.id === id);
+        if (!house) {
+          res.writeHead(404);
+          res.end('Not found');
+          return;
+        }
+        Object.assign(house, payload, { id });
+        writeDB(data);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(house));
+      });
+      return;
+    }
+    if (req.method === 'DELETE') {
+      const idx = data.houses.findIndex(h => h.id === id);
+      if (idx === -1) {
+        res.writeHead(404);
+        res.end('Not found');
+        return;
+      }
+      data.houses.splice(idx, 1);
+      writeDB(data);
+      res.writeHead(204);
+      res.end();
+      return;
+    }
   }
   res.writeHead(404);
   res.end('Not found');

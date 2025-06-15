@@ -3,6 +3,18 @@ async function fetchJSON(url, options) {
   return res.json();
 }
 
+async function updateHouse(id, data) {
+  return fetchJSON(`/api/houses/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  });
+}
+
+async function deleteHouse(id) {
+  await fetch(`/api/houses/${id}`, { method: 'DELETE' });
+}
+
 async function loadHouses() {
   const houses = await fetchJSON('/api/houses');
   const container = document.getElementById('app');
@@ -10,7 +22,29 @@ async function loadHouses() {
   const list = document.createElement('ul');
   houses.forEach(h => {
     const li = document.createElement('li');
-    li.textContent = h.name;
+    const span = document.createElement('span');
+    span.textContent = h.name;
+    li.appendChild(span);
+
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Редактировать';
+    editBtn.onclick = async () => {
+      const name = prompt('Новое название', h.name);
+      if (!name) return;
+      await updateHouse(h.id, { name });
+      loadHouses();
+    };
+    li.appendChild(editBtn);
+
+    const delBtn = document.createElement('button');
+    delBtn.textContent = 'Удалить';
+    delBtn.onclick = async () => {
+      if (!confirm('Удалить дом?')) return;
+      await deleteHouse(h.id);
+      loadHouses();
+    };
+    li.appendChild(delBtn);
+
     list.appendChild(li);
   });
   container.appendChild(list);
