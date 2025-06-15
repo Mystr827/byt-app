@@ -7,3 +7,18 @@ body {
 .app {
   padding: 20px;
 }
+
+.controls {
+  margin-bottom: 1em;
+}
+
+.controls input {
+  margin-right: 0.5em;
+  padding: 4px 8px;
+}
+
+.controls button {
+  margin-right: 0.5em;
+  padding: 4px 8px;
+  cursor: pointer;
+}
