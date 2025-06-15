@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"No tests\"",
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "node index.js",
+    "build": "echo 'no build step'"
   },
   "keywords": [],
   "author": "",
