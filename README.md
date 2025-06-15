@@ -1,16 +1,27 @@
-# byt-app
+# Быт (Byt)
 
-Simple Express server.
+Простое офлайн-веб‑приложение для учёта домашних дел.
 
-## Setup
+## Архитектура
 
-1. Install dependencies:
-   ```sh
-   npm install
-   ```
-2. Start the server:
-   ```sh
-   npm start
-   ```
+- **Backend**: Node.js без внешних зависимостей. Данные хранятся в файле `data/db.json`.
+- **Frontend**: простая страница на JavaScript с поддержкой PWA (service worker и manifest).
 
-Server listens on port 3000 by default.
+## Запуск
+
+```sh
+node index.js
+```
+
+Приложение откроется на `http://localhost:3000`.
+
+## Компоненты
+
+- `index.js` – минимальный HTTP‑сервер и API `/api/houses`.
+- `public/` – статические файлы интерфейса.
+  - `index.html` – основная страница.
+  - `app.js` – логика UI.
+  - `style.css` – стили (тёмная тема).
+  - `service-worker.js` – офлайн‑кэш.
+
+Приложение оптимизировано под мобильные браузеры и может быть установлено как PWA.
