@@ -26,6 +26,18 @@ async function loadHouses() {
     span.textContent = h.name;
     li.appendChild(span);
 
+    const viewBtn = document.createElement('button');
+    viewBtn.textContent = 'Детали';
+    const details = document.createElement('div');
+    details.className = 'details';
+    details.style.display = 'none';
+    details.innerHTML = `\n      <div>Адрес: ${h.address || '—'}</div>\n      <div>Этажей: ${h.floors}</div>\n      <div>Координаты: ${h.coordinates.lat}, ${h.coordinates.lon}</div>\n      <div>Комнат: ${h.rooms.length}</div>`;
+    viewBtn.onclick = () => {
+      details.style.display = details.style.display === 'none' ? 'block' : 'none';
+    };
+    li.appendChild(viewBtn);
+    li.appendChild(details);
+
     const editBtn = document.createElement('button');
     editBtn.textContent = 'Редактировать';
     editBtn.onclick = async () => {
